@@ -1,0 +1,197 @@
+#########################################################################################################################################
+# -= Requirements =-
+#
+# 1. Make sure ansible user has been created
+# 1a. security login create -vserver CLUSTER96 -role admin -application http -authentication-method password -user-or-group-name ansible
+# 1b. security login create -vserver CLUSTER96 -role admin -application ontapi -authentication-method password -user-or-group-name ansible
+# 1c. security login create -vserver CLUSTER96 -role admin -application console -authentication-method password -user-or-group-name ansible
+##########################################################################################################################################
+
+---
+- hosts: localhost
+  gather_facts: false
+  name: NetApp NFS System Setup
+  vars:
+    login: &login
+     hostname: 192.168.1.50 # NetApp Cluster IP
+     username: ansible # Cluster User
+     password: Password123 # Cluster Password
+     https: true
+     validate_certs: false
+    clustername: CLUSTER96 # Cluster Name
+    ntpservers: 192.168.1.101 # Time Server
+    aggrrootoldname: aggr0_CLUSTER96_01 # Aggregate root name after Cluster Setup
+    aggrrootnewname: aggr0_CLUSTER96_01_root # New Aggregate root name
+    aggrdataname: aggr1_CLUSTER96_01_data # New Data Aggregate name
+    diskcount: 26 # Number of disks to add to the Data Aggregate
+    svmname: SVM1 # SVM or Vserver name
+    rootvolname: SVM1_root # SVM root vol name
+    rootvolaggr: aggr1_CLUSTER96_01_data # Which aggregate to place the SVM root vol
+    rootvolsecurity: unix # SVM Root vol security stype
+    allowedaggrs: aggr1_CLUSTER96_01_data # Allowed SVM data Aggregates
+    allowedprotocols: nfs # Allowed SVM Protocols
+    nfsclientmatchsubnet: 192.168.2.0/24 # Allow this subnet to access NFS
+    svmdnsdomain: vmlab.local # SVM DNS Domain
+    svmdnsservers: 192.168.1.101 # SVM DNS Servers
+    nfsvolname: NFS_vol1 # First NFS Vol withint your SVM
+    nfsaggr: aggr1_CLUSTER96_01_data # Which Aggregate to place the NFS Vol on
+    nfsvolsize: 100 # NFS Vol Size GB
+    vlan: 5 # NFS VLAN
+    parentinterface: e0d # Interface where VLAN will be created
+    broadcastname: NFS # Create a new Broadcast Domain with this name
+    broadcastports: ["CLUSTER96-01:e0d-5"] # Add ports here, multiple ports use comma's
+    subnetname: NFS-Subnet # NFS Subnet Name
+    subnetnetwork: 192.168.2.0/24 # NFS Network Subnet
+    subnetiprange: ["192.168.2.51-192.168.2.52"] # NFS LIF IP within the NFS subnet pool
+    lifinterfacename: nfs_lif01 # SVM NFS Lif name
+    lifhomeport: e0d-5 # Home port for SVM NFS Lif
+    lifhomenode: CLUSTER96-01 # Home node for SVM NFS Lif
+    lifaddress: 192.168.2.51 # SVM NFS Lif IP Address
+    lifnetmask: 255.255.255.0 # SVM NFS Lif Subnet
+    vservername: SVM1 # SVM or Vserver Name
+    aggr: aggr1_CLUSTER96_01_data # Which Aggregate to create second NFS vol
+    vol_name: ansibleVol # Second NFS vol name
+  tasks:
+  - name: Install NetApp simulator Licenses
+    na_ontap_cluster:
+      state: present
+      cluster_name: "{{ clustername }}"
+      license_code: "{{ item }}"
+      <<: *login
+    loop:
+      - CAYHXPKBFDUFZGABGAAAAAAAAAAA
+      - APTLYPKBFDUFZGABGAAAAAAAAAAA
+      - WSKTAQKBFDUFZGABGAAAAAAAAAAA
+      - CGVTEQKBFDUFZGABGAAAAAAAAAAA
+      - OUVWXPKBFDUFZGABGAAAAAAAAAAA
+      - QFATWPKBFDUFZGABGAAAAAAAAAAA
+      - UHGXBQKBFDUFZGABGAAAAAAAAAAA
+      - GCEMCQKBFDUFZGABGAAAAAAAAAAA
+      - KYMEAQKBFDUFZGABGAAAAAAAAAAA
+      - SWBBDQKBFDUFZGABGAAAAAAAAAAA
+      - YDPPZPKBFDUFZGABGAAAAAAAAAAA
+      - INIIBQKBFDUFZGABGAAAAAAAAAAA
+  - name: Set NTP
+    na_ontap_ntp:
+      state: present
+      version: auto
+      server_name: "{{ ntpservers }}"
+      <<: *login
+  - name: Set Timezone
+    na_ontap_command:
+      command: ['cluster', 'date', 'modify', '-timezone', 'Australia/Sydney']
+      privilege: admin
+      <<: *login
+  - name: Rename Root Aggregate
+    na_ontap_aggregate:
+      state: present
+      service_state: online
+      from_name: "{{ aggrrootoldname }}"
+      name: "{{ aggrrootnewname }}"
+      <<: *login
+  - name: Create and Online New Data Aggregate
+    na_ontap_aggregate:
+      state: present
+      service_state: online
+      name: "{{ aggrdataname }}"
+      disk_count: "{{ diskcount }}"
+      wait_for_online: true
+      time_out: 300
+      <<: *login
+  - name: Create Vserver
+    na_ontap_svm:
+      state: present
+      name: "{{ vservername }}"
+      root_volume: "{{ rootvolname }}"
+      root_volume_aggregate: "{{ rootvolaggr }}"
+      root_volume_security_style: "{{ rootvolsecurity }}"
+      aggr_list: "{{ allowedaggrs }}"
+      allowed_protocols: "{{ allowedprotocols }}"
+      <<: *login
+  - name: Setup VLAN
+    na_ontap_net_vlan:
+      state: present
+      vlanid: "{{ vlan }}"
+      node: "{{ item }}"
+      parent_interface: "{{ parentinterface }}"
+      <<: *login
+    loop: # Add nodes below
+     - CLUSTER96-01
+  - name: Create Broadcast Domain
+    na_ontap_broadcast_domain:
+      state: present
+      name: "{{ broadcastname }}"
+      mtu: 1500
+      ipspace: Default
+      ports: "{{ broadcastports }}"
+      <<: *login
+  - name: Create Subnet
+    na_ontap_net_subnet:
+      state: present
+      name: "{{ subnetname }}"
+      subnet: "{{ subnetnetwork }}"
+      ip_ranges: "{{ subnetiprange }}"
+      ipspace: Default
+      broadcast_domain: "{{ broadcastname }}"
+      <<: *login
+  - name: Create NFS LIF
+    na_ontap_command:
+      command: ['network', 'interface', 'create', '-vserver', '"{{ vservername }}"', '-home-node', '"{{ lifhomenode }}"', '-home-port', '"{{ lifhomeport }}"', '-data-protocol', 'nfs', '-subnet-name', '"{{ subnetname }}"', '-failover-policy', 'system-defined', '-firewall-policy', 'data', '-lif', '"{{ lifinterfacename }}"']
+      privilege: admin
+      <<: *login
+  - name: Start NFS
+    na_ontap_nfs:
+      state: present
+      service_state: started
+      vserver: "{{ vservername }}"
+      nfsv3: enabled
+      <<: *login
+  - name: Create NFS Export Rule Under Default Policy
+    na_ontap_export_policy_rule:
+      state: present
+      name: default
+      vserver: "{{ vservername }}"
+      client_match: "{{ nfsclientmatchsubnet }}"
+      ro_rule: sys
+      rw_rule: sys
+      protocol: nfs
+      super_user_security: any
+      <<: *login
+  - name: Add DNS Settings to SVM
+    na_ontap_dns:
+      state: present
+      vserver: "{{ vservername }}"
+      domains: "{{ svmdnsdomain }}"
+      nameservers: "{{ svmdnsservers }}"
+      skip_validation: true
+      <<: *login
+  - name: Create First NFS Volumes
+    na_ontap_volume:
+      state: present
+      name: "{{ nfsvolname }}"
+      aggregate_name: "{{ nfsaggr }}"
+      size: "{{ nfsvolsize }}"
+      size_unit: gb
+      space_guarantee: none
+      policy: default
+      percent_snapshot_space: 0
+      vserver: "{{ vservername }}"
+      volume_security_style: unix
+      wait_for_completion: true
+      junction_path: "{{ '/' + nfsvolname }}"
+      <<: *login
+  - name: Create Additional Volume within Vserver
+    na_ontap_volume:
+      state: present
+      name: "{{ vol_name }}"
+      vserver: "{{ vservername }}"
+      aggregate_name: "{{ aggr }}"
+      size: 10
+      size_unit: gb
+      policy: default
+      junction_path: "/{{ vol_name }}"
+      percent_snapshot_space: 0
+      space_guarantee: none
+      volume_security_style: unix
+      wait_for_completion: true
+      <<: *login
