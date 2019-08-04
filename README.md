@@ -12,7 +12,8 @@ Contained within this repository are NetApp Ansible playbooks
 ## File Listing & Description
 1. 00_netapp_full_install.yml<br>
    
-   This playbook is part of my blog post - www.sysadmintutorials.com/how-to-automate-netapp-installations-with-ansible<br>
+   This playbook is part of my blog post:
+   www.sysadmintutorials.com/how-to-automate-netapp-installations-with-ansible<br>
    
    It will setup a NetApp cluster ready for VMware vSphere NFS datastores. It performs the following:
 ```sh
