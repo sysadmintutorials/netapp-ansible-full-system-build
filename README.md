@@ -39,12 +39,12 @@ Contained within this repository are NetApp Ansible playbooks
  
  2. multi-part/netapp_full_install_multi-part.yml<br>
     multi-part/variables.yml<br>
-    multi-part/01_install_licenses_setup_ntp.yml
-    multi-part/02_create_aggregate.yml
-    multi-part/03_create_svm.yml
-    multi-part/04_network_setup.yml
-    multi-part/05_create_volume.yml
-    multi-part/06_mount_nfs_datastore.yml
+    multi-part/01_install_licenses_setup_ntp.yml<br>
+    multi-part/02_create_aggregate.yml<br>
+    multi-part/03_create_svm.yml<br>
+    multi-part/04_network_setup.yml<br>
+    multi-part/05_create_volume.yml<br>
+    multi-part/06_mount_nfs_datastore.yml<br>
 
     This plabook is part of my second Ansible/NetApp/VMware blog post:<br>
     https://www.sysadmintutorials.com/creating-multi-part-ansible-playbook-with-variables-netapp-vmware/<br>
