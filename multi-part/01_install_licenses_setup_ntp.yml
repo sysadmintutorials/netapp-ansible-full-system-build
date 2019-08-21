@@ -1,0 +1,53 @@
+#########################################################################################################################################
+# -= Requirements =-
+#
+# 1. Make sure ansible user has been created
+# 1a. security login create -vserver CLUSTER96 -role admin -application http -authentication-method password -user-or-group-name ansible
+# 1b. security login create -vserver CLUSTER96 -role admin -application ontapi -authentication-method password -user-or-group-name ansible
+##########################################################################################################################################
+
+---
+- hosts: localhost
+  gather_facts: false
+  name: NetApp licensing
+  vars:
+    login: &login    
+     hostname: "{{ clusterip }}"
+     username: "{{ user }}"
+     password: "{{ pass }}"
+     https: "{{ https_option }}"
+     validate_certs: "{{ validate_certs_option }}"
+  vars_files:
+  - variables.yml
+  tasks:
+  - name: Install Licenses
+    na_ontap_cluster:
+      state: present
+      cluster_name: "{{ clustername }}"
+      license_code: "{{ item }}"
+      <<: *login
+    loop:
+      - CAYHXPKBFDUFZGABGAAAAAAAAAAA
+      - APTLYPKBFDUFZGABGAAAAAAAAAAA
+      - WSKTAQKBFDUFZGABGAAAAAAAAAAA
+      - CGVTEQKBFDUFZGABGAAAAAAAAAAA
+      - OUVWXPKBFDUFZGABGAAAAAAAAAAA
+      - QFATWPKBFDUFZGABGAAAAAAAAAAA
+      - UHGXBQKBFDUFZGABGAAAAAAAAAAA
+      - GCEMCQKBFDUFZGABGAAAAAAAAAAA
+      - KYMEAQKBFDUFZGABGAAAAAAAAAAA
+      - SWBBDQKBFDUFZGABGAAAAAAAAAAA
+      - YDPPZPKBFDUFZGABGAAAAAAAAAAA
+      - INIIBQKBFDUFZGABGAAAAAAAAAAA
+  - name: Set NTP
+    na_ontap_ntp:
+      state: present
+      version: auto
+      server_name: "{{ ntpservers }}"
+      <<: *login
+  - name: Set Timezone
+    na_ontap_command:
+      command: ['cluster', 'date', 'modify', '-timezone', '"{{ timezone }}"']
+      privilege: admin
+      <<: *login
+  - debug: msg="Licenses have been installed on {{ clustername }}"

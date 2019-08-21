@@ -1,0 +1,27 @@
+---
+- hosts: localhost
+  name: Mount NetApp NFS Datastores
+  gather_facts: false
+  vars:
+    login: &login
+     hostname: "{{ vcenter_server }}"
+     username: "{{ vcenter_user }}"
+     password: "{{ vcenter_pass }}"
+     validate_certs: no
+  vars_files:
+  - variables.yml
+  tasks:
+  - name: Mount NFS Datastores to ESXi Host
+    vmware_host_datastore:
+      state: present
+      datastore_name: "{{ item.name }}"
+      datastore_type: "{{ item.type }}"
+      nfs_server: "{{ item.server }}"
+      nfs_path: "{{ item.path }}"
+      nfs_ro: no
+      esxi_hostname: "{{ esxihost }}"
+      <<: *login
+    loop:
+     - { 'name': '{{ nfsvolname1 }}', 'server': '{{ lifaddress }}', 'path': '/{{ nfsvolname1 }}', 'type': '{{ voltype }}'}
+     - { 'name': '{{ nfsvolname2 }}', 'server': '{{ lifaddress }}', 'path': '/{{ nfsvolname2 }}', 'type': '{{ voltype }}'}
+  - debug: msg="{{ nfsvolname1 }} & {{ nfsvolname2 }} datastores have been added to ESXi host {{ esxihost }}."

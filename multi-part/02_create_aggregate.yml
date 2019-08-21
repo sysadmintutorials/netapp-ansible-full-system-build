@@ -1,0 +1,38 @@
+#########################################################################################################################################
+# -= Requirements =-
+#
+# 1. Make sure ansible user has been created
+# 1a. security login create -vserver CLUSTER96 -role admin -application http -authentication-method password -user-or-group-name ansible
+# 1b. security login create -vserver CLUSTER96 -role admin -application ontapi -authentication-method password -user-or-group-name ansible
+##########################################################################################################################################
+---
+- hosts: localhost
+  gather_facts: false
+  name: NetApp Aggregate Setup
+  vars:
+    login: &login
+     hostname: "{{ clusterip }}"
+     username: "{{ user }}"
+     password: "{{ pass }}"
+     https: "{{ https_option }}"
+     validate_certs: "{{ validate_certs_option }}"
+  vars_files:
+  - variables.yml
+  tasks:
+  - name: Rename Root Aggregate
+    na_ontap_aggregate:
+      state: present
+      service_state: online
+      from_name: "{{ aggrrootoldname }}"
+      name: "{{ aggrrootnewname }}"
+      <<: *login
+  - name: Create and Online Aggregate
+    na_ontap_aggregate:
+      state: present
+      service_state: online
+      name: "{{ aggrdataname }}"
+      disk_count: "{{ diskcount }}"
+      wait_for_online: true
+      time_out: 300
+      <<: *login
+  - debug: msg="Aggregate {{ aggrrootoldname }} has been renamed to {{ aggrrootnewname }} and new data aggregate {{ aggrdataname }} has been created"

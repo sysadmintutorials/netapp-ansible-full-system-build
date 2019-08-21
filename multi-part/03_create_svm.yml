@@ -1,0 +1,75 @@
+#########################################################################################################################################
+# -= Requirements =-
+#
+# 1. Make sure ansible user has been created
+# 1a. security login create -vserver CLUSTER96 -role admin -application http -authentication-method password -user-or-group-name ansible
+# 1b. security login create -vserver CLUSTER96 -role admin -application ontapi -authentication-method password -user-or-group-name ansible
+##########################################################################################################################################
+---
+- hosts: localhost
+  gather_facts: false
+  name: NetApp SVM Setup
+  vars_files:
+  - variables.yml
+  vars:
+    login: &login
+     hostname: "{{ clusterip }}"
+     username: "{{ user }}"
+     password: "{{ pass }}"
+     https: "{{ https_option }}"
+     validate_certs: "{{ validate_certs_option }}"
+  vars_files:
+  - variables.yml
+  tasks:
+  - name: Create SVM
+    na_ontap_svm:
+      state: present
+      name: "{{ svmname }}"
+      root_volume: "{{ rootvolname }}"
+      root_volume_aggregate: "{{ rootvolaggr }}"
+      root_volume_security_style: "{{ rootvolsecurity }}"
+      aggr_list: "{{ allowedaggrs }}"
+      allowed_protocols: "{{ allowedprotocols }}"
+      <<: *login
+  - name: Start NFS
+    na_ontap_nfs:
+      state: present
+      service_state: started
+      vserver: "{{ svmname }}"
+      nfsv3: enabled
+      <<: *login
+  - name: Create NFS Export Rule Under Default Policy
+    na_ontap_export_policy_rule:
+      state: present
+      name: default
+      vserver: "{{ svmname }}"
+      client_match: "{{ nfsclientmatchsubnet }}"
+      ro_rule: sys
+      rw_rule: sys
+      protocol: nfs
+      super_user_security: any
+      <<: *login
+  - name: Add DNS Settings to SVM
+    na_ontap_dns:
+      state: present
+      vserver: "{{ svmname }}"
+      domains: "{{ svmdnsdomain }}"
+      nameservers: "{{ svmdnsservers }}"
+      skip_validation: true
+      <<: *login
+  - name: Create First NFS Volumes
+    na_ontap_volume:
+      state: present
+      name: "{{ nfsvolname1 }}"
+      aggregate_name: "{{ nfsaggr }}"
+      size: "{{ nfsvolsize }}"
+      size_unit: gb
+      space_guarantee: none
+      policy: default
+      percent_snapshot_space: 0
+      vserver: "{{ svmname }}"
+      volume_security_style: unix    
+      wait_for_completion: true
+      junction_path: "{{ '/' + nfsvolname1 }}"
+      <<: *login
+  - debug: msg="{{ svmname }} has been created along with 1 NFS volume called {{ nfsvolname1 }}"

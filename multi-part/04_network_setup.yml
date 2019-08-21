@@ -1,0 +1,53 @@
+#########################################################################################################################################
+# -= Requirements =-
+#
+# 1. Make sure ansible user has been created
+# 1a. security login create -vserver CLUSTER96 -role admin -application http -authentication-method password -user-or-group-name ansible
+# 1b. security login create -vserver CLUSTER96 -role admin -application ontapi -authentication-method password -user-or-group-name ansible
+##########################################################################################################################################
+---
+- hosts: localhost
+  gather_facts: false
+  name: NetApp Network Setup
+  vars:
+    login: &login
+     hostname: "{{ clusterip }}"
+     username: "{{ user }}"
+     password: "{{ pass }}"
+     https: "{{ https_option }}"
+     validate_certs: "{{ validate_certs_option }}"
+  vars_files:
+  - variables.yml
+  tasks:
+  - name: Setup VLAN
+    na_ontap_net_vlan:
+      state: present
+      vlanid: "{{ vlan }}"
+      node: "{{ item }}"
+      parent_interface: "{{ parentinterface }}"
+      <<: *login
+    loop: # Add nodes below
+     - CLUSTER96-01
+  - name: Create Broadcast Domain
+    na_ontap_broadcast_domain:
+      state: present
+      name: "{{ broadcastname }}"
+      mtu: 1500
+      ipspace: Default
+      ports: "{{ broadcastports }}"
+      <<: *login
+  - name: Create Subnet
+    na_ontap_net_subnet:
+      state: present
+      name: "{{ subnetname }}"
+      subnet: "{{ subnetnetwork }}"
+      ip_ranges: "{{ subnetiprange }}"
+      ipspace: Default
+      broadcast_domain: "{{ broadcastname }}"
+      <<: *login
+  - name: Create NFS LIF
+    na_ontap_command:
+      command: ['network', 'interface', 'create', '-vserver', '"{{ vservername }}"', '-home-node', '"{{ lifhomenode }}"', '-home-port', '"{{ lifhomeport }}"', '-data-protocol', 'nfs', '-subnet-name', '"{{ subnetname }}"', '-failover-policy', 'system-defined', '-firewall-policy', 'data', '-lif', '"{{ lifinterfacename }}"']
+      privilege: admin
+      <<: *login
+  - debug: msg="VLAN {{ vlan }}, broadcast domain {{ broadcastname }}, subnet {{ subnetname}} and NFS lif {{ lifinterfacename }} have been setup."

@@ -1,0 +1,33 @@
+##########################################################
+# This Ansible Playbook calls multiple sub yml playbooks #
+##########################################################
+
+#########################################################################################################################################
+# -= Requirements =-
+#
+# 1. Make sure ansible user has been created
+# 1a. security login create -vserver CLUSTER96 -role admin -application http -authentication-method password -user-or-group-name ansible
+# 1b. security login create -vserver CLUSTER96 -role admin -application ontapi -authentication-method password -user-or-group-name ansible
+##########################################################################################################################################
+
+---
+# Install Licenses and Setup NTP
+- import_playbook: 01_install_licenses_setup_ntp.yml
+
+# Rename Root Aggregate, Create and online new data aggregate
+- import_playbook: 02_create_aggregate.yml
+
+# Crete SVM, start NFS, create NFS export rule, add DNS settings to SVM, create NFS volume
+- import_playbook: 03_create_svm.yml
+
+# Create NFS vlan, create broadcast-domain, create subnet, create NFS lif
+- import_playbook: 04_network_setup.yml
+
+# Create an additional NFS volume
+- import_playbook: 05_create_volume.yml
+
+# Mount NFS datastore to ESXi hosts
+- import_playbook: 06_mount_nfs_datastore.yml esxihost=vmhost3.vmlab.local
+- import_playbook: 06_mount_nfs_datastore.yml esxihost=vmhost4.vmlab.local
+- import_playbook: 06_mount_nfs_datastore.yml esxihost=vmhost5.vmlab.local
+- import_playbook: 06_mount_nfs_datastore.yml esxihost=vmhost6.vmlab.local

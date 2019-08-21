@@ -1,0 +1,28 @@
+---
+- hosts: localhost
+  name: Create Additional NFS Volume
+  gather_facts: false
+  vars:
+    login: &login
+     hostname: "{{ clusterip }}"
+     username: "{{ user }}"
+     password: "{{ pass }}"
+     https: "{{ https_option }}"
+     validate_certs: "{{ validate_certs_option }}"
+  vars_files:
+  - variables.yml
+  tasks:
+  - name: Volume Create
+    na_ontap_volume:
+      state: present
+      name: "{{ nfsvolname2 }}"
+      vserver: "{{ vservername }}"
+      aggregate_name: "{{ aggr }}"
+      size: "{{ nfsvolsize2 }}"
+      size_unit: gb
+      policy: default
+      junction_path: "/{{ nfsvolname2 }}"
+      percent_snapshot_space: 0
+      space_guarantee: none
+      <<: *login
+  - debug: msg="Volume {{ nfsvolname2 }} has been setup."
