@@ -33,9 +33,9 @@ Contained within this repository are NetApp Ansible playbooks
     - Create an additional NFS Volume
  ```
  
-    Be sure to change the variables within the yml file to match your environment
+   Be sure to change the variables within the yml file to match your environment
  
-    To run this ansible playbook simply execute: ansible-playbook 00_netapp_full_install.yml
+   To run this ansible playbook simply execute: ansible-playbook 00_netapp_full_install.yml
  
  2. multi-part/netapp_full_install_multi-part.yml<br>
     multi-part/variables.yml<br>
