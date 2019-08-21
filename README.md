@@ -51,3 +51,5 @@ Contained within this repository are NetApp Ansible playbooks
     
     These runbooks are an improvement on the one gigantic runbook created in step 1. above.
     Please head on over to the blog post to read what has changed.
+    
+    To run this ansible playbook simply execute: ansible-playbook netapp_full_install_multi-part.yml
