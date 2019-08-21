@@ -10,7 +10,7 @@
 Contained within this repository are NetApp Ansible playbooks
 
 ## File Listing & Description
-1. 00_netapp_full_install.yml<br>
+1. combined/00_netapp_full_install.yml<br>
    
    This playbook is part of my blog post:<br>
    www.sysadmintutorials.com/how-to-automate-netapp-installations-with-ansible<br>
@@ -36,3 +36,18 @@ Contained within this repository are NetApp Ansible playbooks
  Be sure to change the variables within the yml file to match your environment
  
  To run this ansible playbook simply execute: ansible-playbook 00_netapp_full_install.yml
+ 
+ 2. multi-part/netapp_full_install_multi-part.yml
+    multi-part/variables.yml
+    multi-part/01_install_licenses_setup_ntp.yml
+    multi-part/02_create_aggregate.yml
+    multi-part/03_create_svm.yml
+    multi-part/04_network_setup.yml
+    multi-part/05_create_volume.yml
+    multi-part/06_mount_nfs_datastore.yml
+
+    This plabook is part of my second Ansible/NetApp/VMware blog post:<br>
+    https://www.sysadmintutorials.com/creating-multi-part-ansible-playbook-with-variables-netapp-vmware/<br>
+    
+    These runbooks are an improvement on the one gigantic runbook created in step 1. above.
+    Please head on over to the blog post to read what has changed.
