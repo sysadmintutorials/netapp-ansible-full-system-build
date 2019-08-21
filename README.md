@@ -37,8 +37,8 @@ Contained within this repository are NetApp Ansible playbooks
  
  To run this ansible playbook simply execute: ansible-playbook 00_netapp_full_install.yml
  
- 2. multi-part/netapp_full_install_multi-part.yml
-    multi-part/variables.yml
+ 2. multi-part/netapp_full_install_multi-part.yml<br>
+    multi-part/variables.yml<br>
     multi-part/01_install_licenses_setup_ntp.yml
     multi-part/02_create_aggregate.yml
     multi-part/03_create_svm.yml
